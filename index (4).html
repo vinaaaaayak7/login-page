@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plugin Vault - Login</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/js/all.min.js" crossorigin="anonymous"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@600&display=swap');
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+        body {
+            height: 100vh; background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white; display: flex; justify-content: center; align-items: center;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.2); border-radius: 15px; padding: 40px;
+            width: 350px; text-align: center;
+        }
+        .input-container { position: relative; width: 100%; margin: 10px 0; }
+        .input-field {
+            width: 100%; padding: 12px; border: none; border-radius: 25px;
+            background: rgba(255, 255, 255, 0.3); color: white; font-size: 16px;
+            outline: none; text-align: center;
+        }
+        .input-field::placeholder { color: rgba(255, 255, 255, 0.7); }
+        .eye-btn {
+            position: absolute; right: 15px; top: 50%; transform: translateY(-50%);
+            cursor: pointer; background: none; border: none; font-size: 18px; color: white;
+        }
+        .remember-me {
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            font-size: 14px; margin: 10px 0;
+        }
+        .btn {
+            width: 100%; padding: 12px; margin-top: 20px; border: none; border-radius: 25px;
+            background: #ff4d4d; color: white; font-size: 18px; cursor: pointer;
+        }
+        .message { margin-top: 15px; font-size: 14px; }
+        /* Dashboard */
+        .dashboard {
+            width: 100%; height: 100vh; display: none; background: #f4f4f4;
+        }
+        .header {
+            background: #4a90e2; color: white; padding: 15px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .profile {
+            position: relative; cursor: pointer; display: flex; align-items: center; gap: 10px;
+        }
+        .profile img {
+            width: 40px; height: 40px; border-radius: 50%;
+            border: 2px solid white; object-fit: cover;
+        }
+        .dropdown {
+            display: none; position: absolute; right: 0; top: 50px; background: white;
+            color: black; width: 250px; border-radius: 8px; box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+            padding: 15px; text-align: center;
+        }
+        .dropdown p {
+            font-size: 16px; font-weight: bold; margin-bottom: 10px; word-wrap: break-word;
+        }
+        .dropdown button {
+            width: 100%; padding: 10px; background: #ff4d4d; color: white;
+            border: none; border-radius: 8px; cursor: pointer;
+        }
+        .dropdown button:hover { background: #e63946; }
+        .show { display: block; }
+    </style>
+</head>
+<body>
+
+    <!-- Login Container -->
+    <div class="container">
+        <h2>Login</h2>
+        <div class="input-container">
+            <input type="email" id="email" class="input-field" placeholder="Enter your email">
+        </div>
+        <div class="input-container">
+            <input type="password" id="password" class="input-field" placeholder="Enter your password">
+            <button class="eye-btn" onclick="togglePassword()">
+                <i id="eye-icon" class="fa fa-eye-slash"></i>
+            </button>
+        </div>
+        <div class="remember-me">
+            <input type="checkbox" id="rememberMe"> <label for="rememberMe">Remember Me</label>
+        </div>
+        <button onclick="handleAuth()" class="btn">Submit</button>
+        <p id="message" class="message"></p>
+    </div>
+
+    <!-- Dashboard -->
+    <div class="dashboard">
+        <div class="header">
+            Plugin Vault
+            <div class="profile" onclick="toggleDropdown()">
+                <img id="profile-pic" src="" alt="Profile">
+                <div class="dropdown" id="dropdown">
+                    <p id="user-email"></p>
+                    <button onclick="logout()">Logout</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const defaultProfile = "https://www.w3schools.com/howto/img_avatar.png";
+
+        function validateEmail(email) {
+            let emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+            return emailPattern.test(email);
+        }
+
+        function handleAuth() {
+            let email = document.getElementById("email").value.trim();
+            let password = document.getElementById("password").value.trim();
+            let rememberMe = document.getElementById("rememberMe").checked;
+            let message = document.getElementById("message");
+
+            if (!validateEmail(email)) {
+                message.innerHTML = "Invalid email address!";
+                return;
+            }
+
+            if (password === "") {
+                message.innerHTML = "Please enter a password!";
+                return;
+            }
+
+            let storedUser = localStorage.getItem(email);
+
+            if (storedUser) {
+                let userData = JSON.parse(storedUser);
+
+                if (userData.password === password) {
+                    localStorage.setItem("loggedInUser", JSON.stringify(userData));
+                    if (rememberMe) {
+                        localStorage.setItem("rememberedEmail", email);
+                    } else {
+                        localStorage.removeItem("rememberedEmail");
+                    }
+                    showDashboard();
+                } else {
+                    message.innerHTML = "Invalid password. Try again!";
+                }
+            } else {
+                let userData = { email: email, password: password, profileImage: defaultProfile };
+                localStorage.setItem(email, JSON.stringify(userData));
+                message.innerHTML = "Account created! You can now log in.";
+            }
+        }
+
+        function showDashboard() {
+            document.querySelector(".container").style.display = "none";
+            document.querySelector(".dashboard").style.display = "block";
+
+            let userData = JSON.parse(localStorage.getItem("loggedInUser"));
+
+            document.getElementById("user-email").innerText = userData.email;
+            document.getElementById("profile-pic").src = userData.profileImage || defaultProfile;
+        }
+
+        function logout() {
+            localStorage.removeItem("loggedInUser");
+            window.location.reload();
+        }
+
+        function toggleDropdown() {
+            document.getElementById("dropdown").classList.toggle("show");
+        }
+
+        function togglePassword() {
+            let passwordField = document.getElementById("password");
+            let eyeIcon = document.getElementById("eye-icon");
+
+            if (passwordField.type === "password") {
+                passwordField.type = "text";
+                eyeIcon.classList.remove("fa-eye-slash");
+                eyeIcon.classList.add("fa-eye");
+            } else {
+                passwordField.type = "password";
+                eyeIcon.classList.remove("fa-eye");
+                eyeIcon.classList.add("fa-eye-slash");
+            }
+        }
+    </script>
+
+</body>
+</html>
